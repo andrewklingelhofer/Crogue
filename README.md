@@ -8,4 +8,4 @@
 	 in that item slot, the third item becomes unable to be equipped or dropped. However, once
 	 you pick up more items of that type, the item becomes droppable/equipable again.
 3. There is no objective yet because there are many aspects of the game that I haven't decided
-	 on yet.
+	 on.
