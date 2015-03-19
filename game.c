@@ -377,8 +377,8 @@ void shrinkArmorInventory(struct mainCharacter *c, struct tiles map[][MAP_X], in
 void dropItem(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	char a = getch();
 	bool toolFound = false, weaponFound = false, armorFound = false;
-	int i, spot;
-	for(i = 0; i < INVENTORYSIZE; i++) {
+	int i, spot = -1;
+	for(i = 0; i < INVENTORYSIZE - 1; i++) {
 		if(c->t_invent[i].id == a) {
 			toolFound = true;
 			spot = i;
@@ -392,7 +392,10 @@ void dropItem(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 			spot = i;
 		}
 	}
-	if(toolFound && c->tool[spot] && map[c->y][c->x].tool == false) {
+	if(spot == -1) {
+
+	}
+	else if(toolFound && c->tool[spot] && map[c->y][c->x].tool == false) {
 		map[c->y][c->x].t = c->t_invent[spot];
 		map[c->y][c->x].tile = TOOL;
 		map[c->y][c->x].tool = true;
@@ -427,7 +430,7 @@ void equipItem(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	char a = getch();
 	bool toolFound = false, weaponFound = false, armorFound = false;;
 	int i, spot;
-	for(i = 1; i < INVENTORYSIZE; i++) {
+	for(i = 1; i < INVENTORYSIZE - 1; i++) {
 		if(c->t_invent[i].id == a) {
 			toolFound = true;
 			spot = i;
