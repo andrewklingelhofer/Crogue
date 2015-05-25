@@ -2,8 +2,8 @@
 
 1:45 a.m. - 5/25/15
 
-• To compile, use "gcc -lncurses game.c -o game" •
-• The <ncurses.h> library isn't standard •
+***To compile, use "gcc -lncurses game.c -o game"
+The <ncurses.h> library isn't standard ***
 
 1. This is just for fun.
 2. As of this moment, there are no known bugs. If any are found, the issues section will be updated.
