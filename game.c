@@ -26,6 +26,7 @@
 #define CONSTX 16
 #define CONSTY 8
 #define FIRSTLEVEL 10
+#define BLANK ' '
 
 struct tiles {
 		char tile;
@@ -44,8 +45,8 @@ struct tiles {
 };
 struct monster initMonster() {
 	struct monster m;
-	int x = rand() % 3;
-	switch(x) {
+	int a = rand() % 3;
+	switch(a) {
 		case 0:
 			m.name = "GOBLIN";
 			m.health = 10;
@@ -78,6 +79,53 @@ int nextLevel(int next) {
 	return next;
 }
 void attackPlayer(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int y) {
+	if(c->armor[0]) {
+		if(map[y][x].m.attack - c->a_invent[0].reduction <= 0) {
+			c->health--;
+		}
+		else {
+			c->health -= (map[y][x].m.attack - c->a_invent[0].reduction);
+		}
+		c->a_invent[0].durability--;
+		if(c->a_invent[0].durability == 0) {
+			c->armor[0] = false;
+			c->size_armor--;
+		}
+	}
+	else {
+		c->health -= map[y][x].m.attack;
+	}
+	if(c->weapon[0]) {
+		map[y][x].m.health -= c->attack + c->w_invent[0].attack;
+		c->w_invent[0].durability--;
+		if(c->w_invent[0].durability == 0) {
+			c->weapon[0] = false;
+			c->size_weapon--;
+		}
+	}
+	else {
+		map[y][x].m.health -= c->attack;
+	}
+	if(c->health <= 0) {
+		clear();
+		mvprintw(20, 20, "GAME OVER");
+		refresh();
+		sleep(5);
+		endwin();
+		exit(1);
+	}
+	else if(map[y][x].m.health <= 0) {
+		c->xp += map[y][x].m.xp;
+		while(c->xp >= c->nextLevel) {
+			c->fixedHealth += 2;
+			c->nextLevel = nextLevel(c->nextLevel);
+			c->level++;
+		}
+		map[y][x].monster = false;
+		map[y][x].tile = GROUND;
+	}
+}
+void playerAttack(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int y) {
 	if(c->armor[0]) {
 		if(map[y][x].m.attack - c->a_invent[0].reduction <= 0) {
 			c->health--;
@@ -481,7 +529,10 @@ void equipItem(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	}
 }
 void movePlayerWest(struct mainCharacter *c, struct tiles map[][MAP_X]) {
-	if(map[c->y][c->x - 1].tile != WALL &&
+	if(map[c->y][c->x - 1].monster) {
+		playerAttack(c, map, c->x - 1, c->y);
+	}
+	else if(map[c->y][c->x - 1].tile != WALL &&
 			map[c->y][c->x - 1].tile != STRUCTURE) {
 		//map[c->y][c->x].tile = GROUND;
 		c->x--;
@@ -500,7 +551,10 @@ void movePlayerWest(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	}
 }
 void movePlayerEast(struct mainCharacter *c, struct tiles map[][MAP_X]) {
-	if(map[c->y][c->x + 1].tile != WALL &&
+	if(map[c->y][c->x + 1].monster) {
+		playerAttack(c, map, c->x + 1, c->y);
+	}
+	else if(map[c->y][c->x + 1].tile != WALL &&
 			map[c->y][c->x + 1].tile != STRUCTURE) {
 		//map[c->y][c->x].tile = GROUND;
 		c->x++;
@@ -519,7 +573,10 @@ void movePlayerEast(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	}
 }
 void movePlayerNorth(struct mainCharacter *c, struct tiles map[][MAP_X]) {
-	if(map[c->y + 1][c->x].tile != WALL &&
+	if(map[c->y + 1][c->x].monster) {
+		playerAttack(c, map, c->x, c->y + 1);
+	}
+	else if(map[c->y + 1][c->x].tile != WALL &&
 			map[c->y + 1][c->x].tile != STRUCTURE) {
 		//map[c->y][c->x].tile = GROUND;
 		c->y++;
@@ -538,7 +595,10 @@ void movePlayerNorth(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	}
 }
 void movePlayerSouth(struct mainCharacter *c, struct tiles map[][MAP_X]) {
-	if(map[c->y - 1][c->x].tile != WALL &&
+	if(map[c->y - 1][c->x].monster) {
+		playerAttack(c, map, c->x, c->y - 1);
+	}
+	else if(map[c->y - 1][c->x].tile != WALL &&
 			map[c->y - 1][c->x].tile != STRUCTURE) {
 		//map[c->y][c->x].tile = GROUND;
 		c->y--;
@@ -796,6 +856,9 @@ int main(int argc, const char * argv[]) {
 					else if(map[i][j].weapon == true) {
 						map[i][j].tile = WEAPON;
 					}
+					else if(map[i][j].tile == BLANK) {
+						map[i][j].tile = GROUND;
+					}
 					mvprintw(yCord, xCord++, "%c", map[i][j].tile);
 				}
 				map[i][j].movedTo = false;
@@ -874,6 +937,7 @@ int main(int argc, const char * argv[]) {
 				mvprintw(1, constX * 2 + 33, "weapon = %s", map[character.y][character.x].weapon ? "true" : "false");
 				mvprintw(2, constX * 2 + 33, "tool = %s", map[character.y][character.x].tool ? "true" : "false");
 				mvprintw(3, constX * 2 + 33, "durability = %d", map[character.y][character.x].durability);
+				mvprintw(4, constX * 2 + 33, "monster = %s", map[character.y][character.x].monster ? "true" : "false");
 				refresh();
 				getch();
 				break;
