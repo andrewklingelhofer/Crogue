@@ -115,7 +115,7 @@ void attackPlayer(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int
 	}
 	else if(map[y][x].m.health <= 0) {
 		c->xp += map[y][x].m.xp;
-		if(c->xp > c->nextLevel) {
+		while(c->xp >= c->nextLevel) {
 			c->fixedHealth += 2;
 			c->nextLevel = nextLevel(c->nextLevel);
 			c->level++;
@@ -683,7 +683,6 @@ void printInventory(struct mainCharacter *c, int constX, int constY) {
 	}
 }
 
-//nothing changed
 
 int main(int argc, const char * argv[]) {
 	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j, rest = 0;
@@ -799,7 +798,6 @@ int main(int argc, const char * argv[]) {
 					}
 					mvprintw(yCord, xCord++, "%c", map[i][j].tile);
 				}
-				//move monsters here...can't actually do this, some monsters will teleport, fixed with bool movedTo
 				map[i][j].movedTo = false;
 			}
 			xCord = 0;
@@ -810,6 +808,7 @@ int main(int argc, const char * argv[]) {
 		xCord = 0;
 		mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character.name, character.attack, character.health, character.fixedHealth);
 		mvprintw(constY * 2 + printY++, 0, "Level: %d | XP = %d/%d", character.level, character.xp, character.nextLevel);
+		//print items under map
 		if(character.tool[0]) {
 			mvprintw(constY * 2 + printY++, 0, "Tool = %c - %s | D = %d", character.t_invent[0].id, character.t_invent[0].name, character.t_invent[0].durability);
 		}
@@ -858,7 +857,7 @@ int main(int argc, const char * argv[]) {
 				mvprintw(constY * 2 + printY++, 0, "Equip which item?");
 				equipItem(&character, map);
 				break;
-			case 'h':
+			case 'h': //print help
 				mvprintw(0, constX * 2 + 38, "--------------Help--------------");
 				mvprintw(1, constX * 2 + 38, "'a' - Left");
 				mvprintw(2, constX * 2 + 38, "'d' - Right");
