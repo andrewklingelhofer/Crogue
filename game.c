@@ -12,7 +12,7 @@
 #define DISTANCE 6 //distance monsters can sense character
 #define HEALTH 10 //starting character health
 #define ATTACK 2 //starting character attack
-#define LOOTSPAWN 3 //affects how frequent items are in structures
+#define LOOTSPAWN 15 //affects how frequent items are in structures
 #define WALL '='
 #define PLAYER '@'
 #define GROUND '.'
@@ -261,9 +261,15 @@ void initCharacter(struct mainCharacter *c) {
 		c->weapon[i] = false;
 		c->armor[i] = false;
 	}
-	c->size_tool = 0;
+	c->size_tool = 1; //start with one tool
 	c->size_weapon = 0;
 	c->size_armor = 0;
+	c->tool[0] = true;
+	c->t_invent[0].name = "Stone PickAxe";
+	c->t_invent[0].durability = (rand() % 19) + 1;
+	c->t_invent[0].x = c->x;
+	c->t_invent[0].y = c->y;
+	c->t_invent[0].id = 33;
 	//xy character starting positions
 	c->x = rand() % MAP_X;
 	if(c->x <= 0) {
@@ -749,12 +755,12 @@ void printInventory(struct mainCharacter *c, int constX, int constY) {
 void createMap(struct tiles map[][MAP_X]) {
 	//creates map tiles
 	int i, j;
-	char id = 33;
+	char id = 34; //initial tool starts at 33
 	for(i = MAP_Y - 1; i >= 0; i--) {
 		for(j = 0; j < MAP_X; j++) {
-			int m = rand() % 500;
-			int r = rand() % 4000;
-			int s = rand() % 200;
+			int m = rand() % 200; //monster frequency
+			int r = rand() % 4000; //what does this do??
+			int s = rand() % 200; //structure frequency
 			int z = -1;
 			if(i == MAP_Y - 1 || j == MAP_X - 1 || i == 0 || j == 0){
 				map[i][j].tile = WALL;
@@ -885,7 +891,12 @@ void printGame(struct mainCharacter *character, struct tiles map[][MAP_X]) {
 	}
 	yCord = 0;
 	xCord = 0;
-	mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character->name, character->attack, character->health, character->fixedHealth);
+	if(character->weapon[0]){
+		mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character->name, character->attack + character->w_invent[0].attack, character->health, character->fixedHealth);
+	}
+	else{
+		mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character->name, character->attack, character->health, character->fixedHealth);
+	}
 	mvprintw(constY * 2 + printY++, 0, "Level: %d | XP = %d/%d", character->level, character->xp, character->nextLevel);
 	//print items under map
 	if(character->tool[0]) {
@@ -904,7 +915,7 @@ void moveCharacter(struct mainCharacter *character, struct tiles map[][MAP_X]) {
 	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j;
 	int constX = CONSTX, constY = CONSTY;
 	int xup = constX, xdown = constX, yup = constY, ydown = constY;
-	int printY = 1, health = HEALTH;
+	int printY = 6, health = HEALTH;
 	bool foundItem = false;
 	int num = 0;
 
