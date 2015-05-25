@@ -9,10 +9,10 @@
 #define NAME_LENGTH 20
 #define MAP_X 100
 #define MAP_Y 40
-#define DISTANCE 6
-#define HEALTH 10
-#define ATTACK 2
-#define LOOTSPAWN 3
+#define DISTANCE 6 //distance monsters can sense character
+#define HEALTH 10 //starting character health
+#define ATTACK 2 //starting character attack
+#define LOOTSPAWN 3 //affects how frequent items are in structures
 #define WALL '='
 #define PLAYER '@'
 #define GROUND '.'
@@ -23,10 +23,11 @@
 #define GOBLIN 'g'
 #define ORC 'O'
 #define DEMON 'D'
-#define CONSTX 16
-#define CONSTY 8
-#define FIRSTLEVEL 10
+#define CONSTX 16 //for printing purposes
+#define CONSTY 8 //for printing purposes
+#define FIRSTLEVEL 10 //starting xp needed, doubles each new level
 #define BLANK ' '
+#define TAB 9 //for 'tab' button
 
 struct tiles {
 		char tile;
@@ -621,6 +622,7 @@ int smallStructure(struct tiles map[][MAP_X], int x, int y, char id) {
 	//int y = rand() % (MAP_Y - 4);
 	int c = rand() % LOOTSPAWN;
 	if(x + 2 < MAP_X && x - 2 > 0 && y + 3 < MAP_Y && y - 3 > 0 && map[y][x].tile != STRUCTURE) {
+		map[y][x].tile = GROUND;
 		map[y][x - 1].tile = STRUCTURE;
 		map[y][x + 1].tile = STRUCTURE;
 		map[y + 1][x + 1].tile = STRUCTURE;
@@ -640,14 +642,15 @@ int smallStructure(struct tiles map[][MAP_X], int x, int y, char id) {
 			initArmor(map, x, y + 1, id);
 			return 1;
 		}
+		return 0; //if no item was placed
 	}
-	return 0;
+	return -1; //if no structure was made
 }
 int mediumStructure(struct tiles map[][MAP_X], int x, int y, char id) {
-	//int x = rand() % MAP_X;
-	//int y = rand() % (MAP_Y - 7);
+
 	int c = rand() % LOOTSPAWN;
 	if(x + 5 < MAP_X && x - 5 > 0 && y + 7 < MAP_Y && y - 2 > 0 && map[y][x].tile != STRUCTURE) {
+		map[y][x].tile = GROUND;
 		map[y][x - 1].tile = STRUCTURE;
 		map[y][x - 2].tile = STRUCTURE;
 		map[y][x - 3].tile = STRUCTURE;
@@ -680,13 +683,13 @@ int mediumStructure(struct tiles map[][MAP_X], int x, int y, char id) {
 			initArmor(map, x, y + 3, id);
 			return 1;
 		}
+		return 0;
 	}
-	return 0;
+	return -1;
 }
 int closedStructure(struct tiles map[][MAP_X], int x, int y, char id) {
-	//int x = rand() % MAP_X;
-	//int y = rand() % (MAP_Y - 4);
-	int c = rand() % 3;
+	//if LOOTSPAWN is higher, less frequent items in structures
+	int c = rand() % LOOTSPAWN;
 	if(x + 2 < MAP_X && x - 2 > 0 && y + 3 < MAP_Y && y - 3 > 0 && map[y][x].tile != STRUCTURE) {
 		map[y][x - 1].tile = STRUCTURE;
 		map[y][x + 1].tile = STRUCTURE;
@@ -708,8 +711,9 @@ int closedStructure(struct tiles map[][MAP_X], int x, int y, char id) {
 			initArmor(map, x, y + 1, id);
 			return 1;
 		}
+		return 0;
 	}
-	return 0;
+	return -1;
 }
 void printInventory(struct mainCharacter *c, int constX, int constY) {
 	int y = 0, i;
@@ -771,6 +775,12 @@ int main(int argc, const char * argv[]) {
 				map[i][j].weapon = false;
 				map[i][j].monster = false;
 			}
+			else if(map[i][j].tile == STRUCTURE){ //if I put this later, changes structure distribution
+				map[i][j].tool = false;
+				map[i][j].weapon = false;
+				map[i][j].armor = false;
+				map[i][j].monster = false;
+			}
 			else if(m == 24) {
 				map[i][j].m = initMonster();
 				map[i][j].m.x = j;
@@ -780,20 +790,33 @@ int main(int argc, const char * argv[]) {
 			}
 			else if(s == 48) {
 				z = smallStructure(map, j, i, id);
-				map[i][j].tile = GROUND;
+				if(z == -1) {
+					map[i][j].tile = GROUND;
+					map[i][j].tool = false;
+					map[i][j].weapon = false;
+					map[i][j].armor = false;
+					map[i][j].monster = false;
+				}
 			}
 			else if(s == 60) {
 				z = mediumStructure(map, j, i, id);
-				map[i][j].tile = GROUND;
+				if(z == -1) {
+					map[i][j].tile = GROUND;
+					map[i][j].tool = false;
+					map[i][j].weapon = false;
+					map[i][j].armor = false;
+					map[i][j].monster = false;
+				}
 			}
 			else if(s == 62) {
 				z = closedStructure(map, j, i, id);
-			}
-			else if(map[i][j].tile == STRUCTURE){
-				map[i][j].tool = false;
-				map[i][j].weapon = false;
-				map[i][j].armor = false;
-				map[i][j].monster = false;
+				if(z == -1) {
+					map[i][j].tile = GROUND;
+					map[i][j].tool = false;
+					map[i][j].weapon = false;
+					map[i][j].armor = false;
+					map[i][j].monster = false;
+				}
 			}
 			else {
 				map[i][j].tile = GROUND;
@@ -804,6 +827,12 @@ int main(int argc, const char * argv[]) {
 			}
 			if(z == 1) {
 				id++;
+			}
+			else if(z == 0) {
+				map[i][j].tool = false;
+				map[i][j].weapon = false;
+				map[i][j].armor = false;
+				map[i][j].monster = false;
 			}
 			map[i][j].durability = (rand() % 4) + 1;
 			map[i][j].x = j;
@@ -883,6 +912,9 @@ int main(int argc, const char * argv[]) {
 		}
 		printInventory(&character, constX, constY);
 		refresh();
+
+		int num = 0;
+
 		switch(getch()) {
 			case 'a': //west
 				movePlayerWest(&character, map);
@@ -921,14 +953,16 @@ int main(int argc, const char * argv[]) {
 				equipItem(&character, map);
 				break;
 			case 'h': //print help
-				mvprintw(0, constX * 2 + 38, "--------------Help--------------");
-				mvprintw(1, constX * 2 + 38, "'a' - Left");
-				mvprintw(2, constX * 2 + 38, "'d' - Right");
-				mvprintw(3, constX * 2 + 38, "'w' - Up");
-				mvprintw(4, constX * 2 + 38, "'s' - Down");
-				mvprintw(5, constX * 2 + 38, "'p' - Pick Up Item");
-				mvprintw(6, constX * 2 + 38, "'P' and '(Item ID)' - Drop Item");
-				mvprintw(7, constX * 2 + 38, "'e' and '(Item ID)' - Equip Item");
+				num = 0;
+				mvprintw(num++, constX * 2 + 38, "--------------Help--------------");
+				mvprintw(num++, constX * 2 + 38, "'a' - Left");
+				mvprintw(num++, constX * 2 + 38, "'d' - Right");
+				mvprintw(num++, constX * 2 + 38, "'w' - Up");
+				mvprintw(num++, constX * 2 + 38, "'s' - Down");
+				mvprintw(num++, constX * 2 + 38, "'p' - Pick Up Item");
+				mvprintw(num++, constX * 2 + 38, "'P' and '(Item ID)' - Drop Item");
+				mvprintw(num++, constX * 2 + 38, "'e' and '(Item ID)' - Equip Item");
+				mvprintw(num++, constX * 2 + 38, "'Tab' - See ground items");
 				refresh();
 				getch();
 				break;
@@ -940,6 +974,25 @@ int main(int argc, const char * argv[]) {
 				mvprintw(4, constX * 2 + 33, "monster = %s", map[character.y][character.x].monster ? "true" : "false");
 				refresh();
 				getch();
+				break;
+			case 9:
+				num = 0;
+				if(map[character.y][character.x].weapon) {
+					mvprintw(num, constX * 2 + 35, "Weapon - A = %d | D = %d", map[character.y][character.x].w.attack, map[character.y][character.x].w.durability);
+					num++;
+				}
+				if(map[character.y][character.x].armor) {
+					mvprintw(num, constX * 2 + 35, "Armor - R = %d | D = %d", map[character.y][character.x].a.reduction, map[character.y][character.x].a.durability);
+					num++;
+				}
+				if(map[character.y][character.x].tool) {
+					mvprintw(num, constX * 2 + 35, "Tool - D = %d", map[character.y][character.x].t.durability);
+					num++;
+				}
+				refresh();
+				getch();
+				break;
+			default:
 				break;
 		}
 		rest++;
