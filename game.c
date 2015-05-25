@@ -746,23 +746,10 @@ void printInventory(struct mainCharacter *c, int constX, int constY) {
 		}
 	}
 }
-
-
-int main(int argc, const char * argv[]) {
-	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j, rest = 0;
-	char id = 33;
-	srand((unsigned)time(NULL));
-	struct tiles map[MAP_Y][MAP_X];
-	struct mainCharacter character;
-	char c[20];
-	initscr();
-	noecho();
-	curs_set(FALSE);
-	mvprintw(0, 0, "What's your name? ");
-	getnstr(c, sizeof(c) - 1);
-	initCharacter(&character);
-	character.name = c;
+void createMap(struct tiles map[][MAP_X]) {
 	//creates map tiles
+	int i, j;
+	char id = 33;
 	for(i = MAP_Y - 1; i >= 0; i--) {
 		for(j = 0; j < MAP_X; j++) {
 			int m = rand() % 500;
@@ -840,167 +827,196 @@ int main(int argc, const char * argv[]) {
 			map[i][j].movedTo = false;
 		}
 	}
+}
+void printGame(struct mainCharacter *character, struct tiles map[][MAP_X]) {
+	int yCord = 0, xCord = 0, constX = CONSTX, constY = CONSTY, i, j;
+	int xup = constX, xdown = constX, yup = constY, ydown = constY;
+	int printY = 1, health = HEALTH;
+	bool foundItem = false;
+	//used for printing out screen | gets the x and y lenghts
+	if(character->y + constY > MAP_Y - 1) {
+		yup = MAP_Y - character->y - 1;
+		ydown += (constY - yup);
+	}
+	if(character->y - constY < 0) {
+		ydown = character->y;
+		yup += (constY - ydown);
+	}
+	if(character->x + constX > MAP_X - 1) {
+		xup = MAP_X - character->x - 1;
+		xdown += (constX - xup);
+	}
+	if(character->x - constX < 0) {
+		xdown = character->x;
+		xup += (constX - xdown);
+	}
+	for(i = character->y + yup; i >= character->y - ydown; i--) {
+		for(j = character->x - xdown; j < character->x + xup + 1; j++) {
+			if(map[i][j].monster == true && map[i][j].movedTo == false) {
+				moveMonster(character, map, j, i);
+			}
+		}
+	}
+	clear();
+	//prints screen based on x and y up/down coords
+	for(i = character->y + yup; i >= character->y - ydown; i--) {
+		for(j = character->x - xdown; j < character->x + xup + 1; j++) {
+			if(i == character->y && j == character->x) {
+				mvprintw(yCord, xCord++, "%c", character->tile);
+			}
+			else {
+				//might mess with how monsters are printed
+				if(map[i][j].tool == true) {
+					map[i][j].tile = TOOL;
+				}
+				else if(map[i][j].weapon == true) {
+					map[i][j].tile = WEAPON;
+				}
+				else if(map[i][j].tile == BLANK) {
+					map[i][j].tile = GROUND;
+				}
+				mvprintw(yCord, xCord++, "%c", map[i][j].tile);
+			}
+			map[i][j].movedTo = false;
+		}
+		xCord = 0;
+		mvprintw(i, j, "\n");
+		yCord++;
+	}
+	yCord = 0;
+	xCord = 0;
+	mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character->name, character->attack, character->health, character->fixedHealth);
+	mvprintw(constY * 2 + printY++, 0, "Level: %d | XP = %d/%d", character->level, character->xp, character->nextLevel);
+	//print items under map
+	if(character->tool[0]) {
+		mvprintw(constY * 2 + printY++, 0, "Tool = %c - %s | D = %d", character->t_invent[0].id, character->t_invent[0].name, character->t_invent[0].durability);
+	}
+	if(character->weapon[0]) {
+		mvprintw(constY * 2 + printY++, 0, "Weapon = %c - %s | A = %d | D = %d", character->w_invent[0].id, character->w_invent[0].name, character->w_invent[0].attack, character->w_invent[0].durability);
+	}
+	if(character->armor[0]) {
+		mvprintw(constY * 2 + printY++, 0, "Armor = %c - %s | R = %d | D = %d", character->a_invent[0].id, character->a_invent[0].name, character->a_invent[0].reduction, character->a_invent[0].durability);
+	}
+	printInventory(character, constX, constY);
+	refresh();
+}
+void moveCharacter(struct mainCharacter *character, struct tiles map[][MAP_X]) {
+	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j;
+	int constX = CONSTX, constY = CONSTY;
+	int xup = constX, xdown = constX, yup = constY, ydown = constY;
+	int printY = 1, health = HEALTH;
+	bool foundItem = false;
+	int num = 0;
+
+	switch(getch()) {
+		case 'a': //west
+			movePlayerWest(character, map);
+			break;
+		case 'd': //east
+			movePlayerEast(character, map);
+			break;
+		case 'w': //north
+			movePlayerNorth(character, map);
+			break;
+		case 's': //south
+			movePlayerSouth(character, map);
+			break;
+		case 'p': //pick up item
+			pickUpItem(character, map);
+			break;
+		case 'P': //drop item
+			for(i = 0; i < INVENTORYSIZE; i++) {
+				if(character->tool[i]) {
+					foundItem = true;
+				}
+				else if(character->weapon[i]) {
+					foundItem = true;
+				}
+				else if(character->armor[i]) {
+					foundItem = true;
+				}
+			}
+			if(foundItem) {
+				mvprintw(constY * 2 + printY++, 0, "Drop which item?");
+				dropItem(character, map);
+			}
+			break;
+		case 'e': //equip item
+			mvprintw(constY * 2 + printY++, 0, "Equip which item?");
+			equipItem(character, map);
+			break;
+		case 'h': //print help
+			num = 0;
+			mvprintw(num++, constX * 2 + 38, "--------------Help--------------");
+			mvprintw(num++, constX * 2 + 38, "'a' - Left");
+			mvprintw(num++, constX * 2 + 38, "'d' - Right");
+			mvprintw(num++, constX * 2 + 38, "'w' - Up");
+			mvprintw(num++, constX * 2 + 38, "'s' - Down");
+			mvprintw(num++, constX * 2 + 38, "'p' - Pick Up Item");
+			mvprintw(num++, constX * 2 + 38, "'P' and '(Item ID)' - Drop Item");
+			mvprintw(num++, constX * 2 + 38, "'e' and '(Item ID)' - Equip Item");
+			mvprintw(num++, constX * 2 + 38, "'Tab' - See ground items");
+			refresh();
+			getch();
+			break;
+		case '.': //for debugging
+			mvprintw(0, constX * 2 + 33, "tile = %c", map[character->y][character->x].tile);
+			mvprintw(1, constX * 2 + 33, "weapon = %s", map[character->y][character->x].weapon ? "true" : "false");
+			mvprintw(2, constX * 2 + 33, "tool = %s", map[character->y][character->x].tool ? "true" : "false");
+			mvprintw(3, constX * 2 + 33, "durability = %d", map[character->y][character->x].durability);
+			mvprintw(4, constX * 2 + 33, "monster = %s", map[character->y][character->x].monster ? "true" : "false");
+			refresh();
+			getch();
+			break;
+		case 9:
+			num = 0;
+			if(map[character->y][character->x].weapon) {
+				mvprintw(num, constX * 2 + 35, "Weapon - A = %d | D = %d", map[character->y][character->x].w.attack, map[character->y][character->x].w.durability);
+				num++;
+			}
+			if(map[character->y][character->x].armor) {
+				mvprintw(num, constX * 2 + 35, "Armor - R = %d | D = %d", map[character->y][character->x].a.reduction, map[character->y][character->x].a.durability);
+				num++;
+			}
+			if(map[character->y][character->x].tool) {
+				mvprintw(num, constX * 2 + 35, "Tool - D = %d", map[character->y][character->x].t.durability);
+				num++;
+			}
+			refresh();
+			getch();
+			break;
+		default:
+			break;
+	}
+	refresh();
+	clear();
+}
+
+int main(int argc, const char * argv[]) {
+	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j, rest = 0;
+	srand((unsigned)time(NULL));
+	struct tiles map[MAP_Y][MAP_X];
+	struct mainCharacter character;
+	char c[20];
+	initscr();
+	noecho();
+	curs_set(FALSE);
+	mvprintw(0, 0, "What's your name? ");
+	getnstr(c, sizeof(c) - 1);
+	initCharacter(&character);
+	character.name = c;
+
+	createMap(map);
+
 	//game runs here | prints, getch/switch, etc...
 	while(1) {
-		int constX = CONSTX, constY = CONSTY;
-		int xup = constX, xdown = constX, yup = constY, ydown = constY;
-		int printY = 1, health = HEALTH;
-		bool foundItem = false;
-		//used for printing out screen | gets the x and y lenghts
-		if(character.y + constY > MAP_Y - 1) {
-			yup = MAP_Y - character.y - 1;
-			ydown += (constY - yup);
-		}
-		if(character.y - constY < 0) {
-			ydown = character.y;
-			yup += (constY - ydown);
-		}
-		if(character.x + constX > MAP_X - 1) {
-			xup = MAP_X - character.x - 1;
-			xdown += (constX - xup);
-		}
-		if(character.x - constX < 0) {
-			xdown = character.x;
-			xup += (constX - xdown);
-		}
-		for(i = character.y + yup; i >= character.y - ydown; i--) {
-			for(j = character.x - xdown; j < character.x + xup + 1; j++) {
-				if(map[i][j].monster == true && map[i][j].movedTo == false) {
-					moveMonster(&character, map, j, i);
-				}
-			}
-		}
-		clear();
-		//prints screen based on x and y up/down coords
-		for(i = character.y + yup; i >= character.y - ydown; i--) {
-			for(j = character.x - xdown; j < character.x + xup + 1; j++) {
-				if(i == character.y && j == character.x) {
-					mvprintw(yCord, xCord++, "%c", character.tile);
-				}
-				else {
-					//might mess with how monsters are printed
-					if(map[i][j].tool == true) {
-						map[i][j].tile = TOOL;
-					}
-					else if(map[i][j].weapon == true) {
-						map[i][j].tile = WEAPON;
-					}
-					else if(map[i][j].tile == BLANK) {
-						map[i][j].tile = GROUND;
-					}
-					mvprintw(yCord, xCord++, "%c", map[i][j].tile);
-				}
-				map[i][j].movedTo = false;
-			}
-			xCord = 0;
-			mvprintw(i, j, "\n");
-			yCord++;
-		}
-		yCord = 0;
-		xCord = 0;
-		mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character.name, character.attack, character.health, character.fixedHealth);
-		mvprintw(constY * 2 + printY++, 0, "Level: %d | XP = %d/%d", character.level, character.xp, character.nextLevel);
-		//print items under map
-		if(character.tool[0]) {
-			mvprintw(constY * 2 + printY++, 0, "Tool = %c - %s | D = %d", character.t_invent[0].id, character.t_invent[0].name, character.t_invent[0].durability);
-		}
-		if(character.weapon[0]) {
-			mvprintw(constY * 2 + printY++, 0, "Weapon = %c - %s | A = %d | D = %d", character.w_invent[0].id, character.w_invent[0].name, character.w_invent[0].attack, character.w_invent[0].durability);
-		}
-		if(character.armor[0]) {
-			mvprintw(constY * 2 + printY++, 0, "Armor = %c - %s | R = %d | D = %d", character.a_invent[0].id, character.a_invent[0].name, character.a_invent[0].reduction, character.a_invent[0].durability);
-		}
-		printInventory(&character, constX, constY);
-		refresh();
 
-		int num = 0;
-
-		switch(getch()) {
-			case 'a': //west
-				movePlayerWest(&character, map);
-				break;
-			case 'd': //east
-				movePlayerEast(&character, map);
-				break;
-			case 'w': //north
-				movePlayerNorth(&character, map);
-				break;
-			case 's': //south
-				movePlayerSouth(&character, map);
-				break;
-			case 'p': //pick up item
-				pickUpItem(&character, map);
-				break;
-			case 'P': //drop item
-				for(i = 0; i < INVENTORYSIZE; i++) {
-					if(character.tool[i]) {
-						foundItem = true;
-					}
-					else if(character.weapon[i]) {
-						foundItem = true;
-					}
-					else if(character.armor[i]) {
-						foundItem = true;
-					}
-				}
-				if(foundItem) {
-					mvprintw(constY * 2 + printY++, 0, "Drop which item?");
-					dropItem(&character, map);
-				}
-				break;
-			case 'e': //equip item
-				mvprintw(constY * 2 + printY++, 0, "Equip which item?");
-				equipItem(&character, map);
-				break;
-			case 'h': //print help
-				num = 0;
-				mvprintw(num++, constX * 2 + 38, "--------------Help--------------");
-				mvprintw(num++, constX * 2 + 38, "'a' - Left");
-				mvprintw(num++, constX * 2 + 38, "'d' - Right");
-				mvprintw(num++, constX * 2 + 38, "'w' - Up");
-				mvprintw(num++, constX * 2 + 38, "'s' - Down");
-				mvprintw(num++, constX * 2 + 38, "'p' - Pick Up Item");
-				mvprintw(num++, constX * 2 + 38, "'P' and '(Item ID)' - Drop Item");
-				mvprintw(num++, constX * 2 + 38, "'e' and '(Item ID)' - Equip Item");
-				mvprintw(num++, constX * 2 + 38, "'Tab' - See ground items");
-				refresh();
-				getch();
-				break;
-			case '.': //for debugging
-				mvprintw(0, constX * 2 + 33, "tile = %c", map[character.y][character.x].tile);
-				mvprintw(1, constX * 2 + 33, "weapon = %s", map[character.y][character.x].weapon ? "true" : "false");
-				mvprintw(2, constX * 2 + 33, "tool = %s", map[character.y][character.x].tool ? "true" : "false");
-				mvprintw(3, constX * 2 + 33, "durability = %d", map[character.y][character.x].durability);
-				mvprintw(4, constX * 2 + 33, "monster = %s", map[character.y][character.x].monster ? "true" : "false");
-				refresh();
-				getch();
-				break;
-			case 9:
-				num = 0;
-				if(map[character.y][character.x].weapon) {
-					mvprintw(num, constX * 2 + 35, "Weapon - A = %d | D = %d", map[character.y][character.x].w.attack, map[character.y][character.x].w.durability);
-					num++;
-				}
-				if(map[character.y][character.x].armor) {
-					mvprintw(num, constX * 2 + 35, "Armor - R = %d | D = %d", map[character.y][character.x].a.reduction, map[character.y][character.x].a.durability);
-					num++;
-				}
-				if(map[character.y][character.x].tool) {
-					mvprintw(num, constX * 2 + 35, "Tool - D = %d", map[character.y][character.x].t.durability);
-					num++;
-				}
-				refresh();
-				getch();
-				break;
-			default:
-				break;
-		}
+		printGame(&character, map);
+		moveCharacter(&character, map);
 		rest++;
 		if(rest % 15 == 0 && character.health < character.fixedHealth) {
 			character.health++;
 		}
-		refresh();
-		clear();
 	}
 	endwin();
 }
