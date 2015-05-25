@@ -11,6 +11,8 @@
 #define MAP_Y 40
 #define DISTANCE 6
 #define HEALTH 10
+#define ATTACK 2
+#define LOOTSPAWN 3
 #define WALL '='
 #define PLAYER '@'
 #define GROUND '.'
@@ -77,7 +79,12 @@ int nextLevel(int next) {
 }
 void attackPlayer(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int y) {
 	if(c->armor[0]) {
-		c->health -= (map[y][x].m.attack - c->a_invent[0].reduction);
+		if(map[y][x].m.attack - c->a_invent[0].reduction <= 0) {
+			c->health--;
+		}
+		else {
+			c->health -= (map[y][x].m.attack - c->a_invent[0].reduction);
+		}
 		c->a_invent[0].durability--;
 		if(c->a_invent[0].durability == 0) {
 			c->armor[0] = false;
@@ -193,7 +200,7 @@ void moveMonster(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int 
 }
 void initCharacter(struct mainCharacter *c) {
 	int i;
-	c->attack = 10;
+	c->attack = ATTACK;
 	c->health = HEALTH;
 	c->fixedHealth = HEALTH;
 	c->tile = PLAYER;
@@ -225,54 +232,46 @@ void initCharacter(struct mainCharacter *c) {
 	}
 }
 void initTool(struct tiles map[][MAP_X], int x, int y, char id) {
-	int z = rand() % 10;
-	switch(z) {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			map[y][x].t.name = "Stone PickAxe";
-			map[y][x].t.durability = (rand() % 19) + 1;
-			map[y][x].t.x = x;
-			map[y][x].t.y = y;
-			map[y][x].t.id = id;
-			map[y][x].tool = true;
-			map[y][x].weapon = false;
-			map[y][x].tile = TOOL;
-			break;
-		case 4:
-		case 5:
-		case 6:
-			map[y][x].t.name = "Silver PickAxe";
-			map[y][x].t.durability = (rand() % 19) + 20;
-			map[y][x].t.x = x;
-			map[y][x].t.y = y;
-			map[y][x].t.id = id;
-			map[y][x].tool = true;
-			map[y][x].weapon = false;
-			map[y][x].tile = TOOL;
-			break;
-		case 7:
-		case 8:
-			map[y][x].t.name = "Golden PickAxe";
-			map[y][x].t.durability = (rand() % 19) + 40;
-			map[y][x].t.x = x;
-			map[y][x].t.y = y;
-			map[y][x].t.id = id;
-			map[y][x].tool = true;
-			map[y][x].weapon = false;
-			map[y][x].tile = TOOL;
-			break;
-		case 9:
-			map[y][x].t.name = "Diamond PickAxe";
-			map[y][x].t.durability = (rand() % 19) + 60;
-			map[y][x].t.x = x;
-			map[y][x].t.y = y;
-			map[y][x].t.id = id;
-			map[y][x].tool = true;
-			map[y][x].weapon = false;
-			map[y][x].tile = TOOL;
-			break;
+	int z = rand() % 100;
+	if(z >= 0 && z < 50) {
+		map[y][x].t.name = "Stone PickAxe";
+		map[y][x].t.durability = (rand() % 19) + 1;
+		map[y][x].t.x = x;
+		map[y][x].t.y = y;
+		map[y][x].t.id = id;
+		map[y][x].tool = true;
+		map[y][x].weapon = false;
+		map[y][x].tile = TOOL;
+	}
+	else if(z >= 50 && z < 80) {
+		map[y][x].t.name = "Silver PickAxe";
+		map[y][x].t.durability = (rand() % 19) + 20;
+		map[y][x].t.x = x;
+		map[y][x].t.y = y;
+		map[y][x].t.id = id;
+		map[y][x].tool = true;
+		map[y][x].weapon = false;
+		map[y][x].tile = TOOL;
+	}
+	else if(z >= 80 && z < 95) {
+		map[y][x].t.name = "Golden PickAxe";
+		map[y][x].t.durability = (rand() % 19) + 40;
+		map[y][x].t.x = x;
+		map[y][x].t.y = y;
+		map[y][x].t.id = id;
+		map[y][x].tool = true;
+		map[y][x].weapon = false;
+		map[y][x].tile = TOOL;
+	}
+	else {
+		map[y][x].t.name = "Diamond PickAxe";
+		map[y][x].t.durability = (rand() % 19) + 60;
+		map[y][x].t.x = x;
+		map[y][x].t.y = y;
+		map[y][x].t.id = id;
+		map[y][x].tool = true;
+		map[y][x].weapon = false;
+		map[y][x].tile = TOOL;
 	}
 }
 void initWeapon(struct tiles map[][MAP_X], int x, int y, char id) {
@@ -377,25 +376,22 @@ void shrinkArmorInventory(struct mainCharacter *c, struct tiles map[][MAP_X], in
 void dropItem(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	char a = getch();
 	bool toolFound = false, weaponFound = false, armorFound = false;
-	int i, spot = -1;
-	for(i = 0; i < INVENTORYSIZE - 1; i++) {
-		if(c->t_invent[i].id == a) {
+	int i, spot;
+	for(i = 0; i < INVENTORYSIZE; i++) {
+		if(c->tool[i] && c->t_invent[i].id == a) {
 			toolFound = true;
 			spot = i;
 		}
-		else if(c->w_invent[i].id == a) {
+		else if(c->weapon[i] && c->w_invent[i].id == a) {
 			weaponFound = true;
 			spot = i;
 		}
-		else if(c->a_invent[i].id == a) {
+		else if(c->armor[i] && c->a_invent[i].id == a) {
 			armorFound = true;
 			spot = i;
 		}
 	}
-	if(spot == -1) {
-
-	}
-	else if(toolFound && c->tool[spot] && map[c->y][c->x].tool == false) {
+	if(toolFound && c->tool[spot] && map[c->y][c->x].tool == false) {
 		map[c->y][c->x].t = c->t_invent[spot];
 		map[c->y][c->x].tile = TOOL;
 		map[c->y][c->x].tool = true;
@@ -430,16 +426,16 @@ void equipItem(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 	char a = getch();
 	bool toolFound = false, weaponFound = false, armorFound = false;;
 	int i, spot;
-	for(i = 1; i < INVENTORYSIZE - 1; i++) {
-		if(c->t_invent[i].id == a) {
+	for(i = 1; i < INVENTORYSIZE; i++) {
+		if(c->tool[i] && c->t_invent[i].id == a) {
 			toolFound = true;
 			spot = i;
 		}
-		else if(c->w_invent[i].id == a) {
+		else if(c->weapon[i] && c->w_invent[i].id == a) {
 			weaponFound = true;
 			spot = i;
 		}
-		else if(c->a_invent[i].id == a) {
+		else if(c->armor[i] && c->a_invent[i].id == a) {
 			armorFound = true;
 			spot = i;
 		}
@@ -560,10 +556,11 @@ void movePlayerSouth(struct mainCharacter *c, struct tiles map[][MAP_X]) {
 		}
 	}
 }
-void smallStructure(struct tiles map[][MAP_X]) {
-	int x = rand() % MAP_X;
-	int y = rand() % (MAP_Y - 4);
-	if(x + 2 < MAP_X && x - 2 > 0 && y + 3 < MAP_Y && y - 3 > 0) {
+int smallStructure(struct tiles map[][MAP_X], int x, int y, char id) {
+	//int x = rand() % MAP_X;
+	//int y = rand() % (MAP_Y - 4);
+	int c = rand() % LOOTSPAWN;
+	if(x + 2 < MAP_X && x - 2 > 0 && y + 3 < MAP_Y && y - 3 > 0 && map[y][x].tile != STRUCTURE) {
 		map[y][x - 1].tile = STRUCTURE;
 		map[y][x + 1].tile = STRUCTURE;
 		map[y + 1][x + 1].tile = STRUCTURE;
@@ -571,11 +568,25 @@ void smallStructure(struct tiles map[][MAP_X]) {
 		map[y + 2][x + 1].tile = STRUCTURE;
 		map[y + 2][x - 1].tile = STRUCTURE;
 		map[y + 2][x].tile = STRUCTURE;
+		if(c == 0 && id < 'z') {
+			initTool(map, x, y + 1, id);
+			return 1;
+		}
+		else if(c == 1 && id < 'z') {
+			initWeapon(map, x, y + 1, id);
+			return 1;
+		}
+		else if(c == 2 && id < 'z') {
+			initArmor(map, x, y + 1, id);
+			return 1;
+		}
 	}
+	return 0;
 }
-void mediumStructure(struct tiles map[][MAP_X]) {
-	int x = rand() % MAP_X;
-	int y = rand() % (MAP_Y - 7);
+int mediumStructure(struct tiles map[][MAP_X], int x, int y, char id) {
+	//int x = rand() % MAP_X;
+	//int y = rand() % (MAP_Y - 7);
+	int c = rand() % LOOTSPAWN;
 	if(x + 5 < MAP_X && x - 5 > 0 && y + 7 < MAP_Y && y - 2 > 0 && map[y][x].tile != STRUCTURE) {
 		map[y][x - 1].tile = STRUCTURE;
 		map[y][x - 2].tile = STRUCTURE;
@@ -597,7 +608,48 @@ void mediumStructure(struct tiles map[][MAP_X]) {
 		map[y + 4][x - 1].tile = STRUCTURE;
 		map[y + 4][x - 2].tile = STRUCTURE;
 		map[y + 4][x - 3].tile = STRUCTURE;
+		if(c == 0 && id < 'z') {
+			initTool(map, x, y + 3, id);
+			return 1;
+		}
+		else if(c == 1 && id < 'z') {
+			initWeapon(map, x, y + 3, id);
+			return 1;
+		}
+		else if(c == 2 && id < 'z') {
+			initArmor(map, x, y + 3, id);
+			return 1;
+		}
 	}
+	return 0;
+}
+int closedStructure(struct tiles map[][MAP_X], int x, int y, char id) {
+	//int x = rand() % MAP_X;
+	//int y = rand() % (MAP_Y - 4);
+	int c = rand() % 3;
+	if(x + 2 < MAP_X && x - 2 > 0 && y + 3 < MAP_Y && y - 3 > 0 && map[y][x].tile != STRUCTURE) {
+		map[y][x - 1].tile = STRUCTURE;
+		map[y][x + 1].tile = STRUCTURE;
+		map[y + 1][x + 1].tile = STRUCTURE;
+		map[y + 1][x - 1].tile = STRUCTURE;
+		map[y + 2][x + 1].tile = STRUCTURE;
+		map[y + 2][x - 1].tile = STRUCTURE;
+		map[y + 2][x].tile = STRUCTURE;
+		map[y][x].tile = STRUCTURE;
+		if(c == 0 && id < 'z') {
+			initTool(map, x, y + 1, id);
+			return 1;
+		}
+		else if(c == 1 && id < 'z') {
+			initWeapon(map, x, y + 1, id);
+			return 1;
+		}
+		else if(c == 2 && id < 'z') {
+			initArmor(map, x, y + 1, id);
+			return 1;
+		}
+	}
+	return 0;
 }
 void printInventory(struct mainCharacter *c, int constX, int constY) {
 	int y = 0, i;
@@ -631,6 +683,8 @@ void printInventory(struct mainCharacter *c, int constX, int constY) {
 	}
 }
 
+//nothing changed
+
 int main(int argc, const char * argv[]) {
 	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j, rest = 0;
 	char id = 33;
@@ -646,10 +700,12 @@ int main(int argc, const char * argv[]) {
 	initCharacter(&character);
 	character.name = c;
 	//creates map tiles
-	for(i = 0; i < MAP_Y; i++) {
+	for(i = MAP_Y - 1; i >= 0; i--) {
 		for(j = 0; j < MAP_X; j++) {
 			int m = rand() % 500;
-			int r = rand() % 200;
+			int r = rand() % 4000;
+			int s = rand() % 200;
+			int z = -1;
 			if(i == MAP_Y - 1 || j == MAP_X - 1 || i == 0 || j == 0){
 				map[i][j].tile = WALL;
 				map[i][j].tool = false;
@@ -663,22 +719,22 @@ int main(int argc, const char * argv[]) {
 				map[i][j].tile = map[i][j].m.tile;
 				map[i][j].monster = true;
 			}
-			else if(r == 36 && id < 'z') {
-				initTool(map, j, i, id++);
-			}
-			else if(r == 40 && id < 'z') {
-				initWeapon(map, j, i, id++);
-			}
-			else if(r == 44 && id < 'z') {
-				initArmor(map, j, i, id++);
-			}
-			else if(r == 48) {
-				smallStructure(map);
+			else if(s == 48) {
+				z = smallStructure(map, j, i, id);
 				map[i][j].tile = GROUND;
 			}
-			else if(r == 60) {
-				mediumStructure(map);
+			else if(s == 60) {
+				z = mediumStructure(map, j, i, id);
 				map[i][j].tile = GROUND;
+			}
+			else if(s == 62) {
+				z = closedStructure(map, j, i, id);
+			}
+			else if(map[i][j].tile == STRUCTURE){
+				map[i][j].tool = false;
+				map[i][j].weapon = false;
+				map[i][j].armor = false;
+				map[i][j].monster = false;
 			}
 			else {
 				map[i][j].tile = GROUND;
@@ -686,6 +742,9 @@ int main(int argc, const char * argv[]) {
 				map[i][j].weapon = false;
 				map[i][j].armor = false;
 				map[i][j].monster = false;
+			}
+			if(z == 1) {
+				id++;
 			}
 			map[i][j].durability = (rand() % 4) + 1;
 			map[i][j].x = j;
@@ -791,12 +850,12 @@ int main(int argc, const char * argv[]) {
 					}
 				}
 				if(foundItem) {
-					mvprintw(constY * 2 + 5, 0, "Drop which item?");
+					mvprintw(constY * 2 + printY++, 0, "Drop which item?");
 					dropItem(&character, map);
 				}
 				break;
 			case 'e': //equip item
-				mvprintw(constY * 2 + 5, 0, "Equip which item?");
+				mvprintw(constY * 2 + printY++, 0, "Equip which item?");
 				equipItem(&character, map);
 				break;
 			case 'h':
