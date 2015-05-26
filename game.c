@@ -10,8 +10,6 @@
 #define MAP_X 100
 #define MAP_Y 40
 #define DISTANCE 6 //distance monsters can sense character
-#define HEALTH 10 //starting character health
-#define ATTACK 2 //starting character attack
 #define LOOTSPAWN 15 //affects how frequent items are in structures
 #define WALL '='
 #define PLAYER '@'
@@ -25,7 +23,9 @@
 #define DEMON 'D'
 #define CONSTX 16 //for printing purposes
 #define CONSTY 8 //for printing purposes
-#define FIRSTLEVEL 10 //starting xp needed, doubles each new level
+#define HUMANFIRSTLEVEL 10 //starting human xp needed, doubles each new level
+#define THEORFIRSTLEVEL 20 //starting human xp needed, doubles each new level
+#define LARWENFIRSTLEVEL 40 //starting human xp needed, doubles each new level
 #define BLANK ' '
 #define TAB 9 //for 'tab' button
 
@@ -78,6 +78,102 @@ struct monster initMonster() {
 int nextLevel(int next) {
 	next += next;
 	return next;
+}
+void lore() {
+	clear();
+	mvprintw(0, 0, "Here is the lore. Press any key to continue.");
+	getch();
+}
+char chooseClass() {
+	char a = '0';
+	while(a != '1' && a != '2' && a != '3') {
+		clear();
+		mvprintw(0, 0, "Choose your class: ");
+		mvprintw(1, 0, "1. Human");
+		mvprintw(2, 0, "2. Theor");
+		mvprintw(3, 0, "3. Larwen");
+		mvprintw(4, 0, "To find out more about each class, press h");
+		a = getch();
+		if(a == 'h') {
+			lore();
+		}
+	}
+	return a;
+}
+void human(struct mainCharacter *c) {
+	int i;
+	c->cls = "Human";
+	c->attack = HUMANATTACK;
+	c->health = HUMANHEALTH;
+	c->fixedHealth = HUMANHEALTH;
+	c->tile = PLAYER;
+	c->xp = 0;
+	c->level = 1;
+	c->nextLevel = HUMANFIRSTLEVEL;
+	for(i = 0; i < INVENTORYSIZE; i++) {
+		c->tool[i] = false;
+		c->weapon[i] = false;
+		c->armor[i] = false;
+	}
+	c->size_tool = 1; //start with one tool
+	c->size_weapon = 0;
+	c->size_armor = 0;
+	c->tool[0] = true;
+	c->t_invent[0].name = "Stone PickAxe";
+	c->t_invent[0].durability = (rand() % 19) + 1;
+	c->t_invent[0].x = c->x;
+	c->t_invent[0].y = c->y;
+	c->t_invent[0].id = 33;
+}
+void theor(struct mainCharacter *c) {
+	int i;
+	c->cls = "Theor";
+	c->attack = THEORATTACK;
+	c->health = THEORHEALTH;
+	c->fixedHealth = THEORHEALTH;
+	c->tile = PLAYER;
+	c->xp = 0;
+	c->level = 1;
+	c->nextLevel = THEORFIRSTLEVEL;
+	for(i = 0; i < INVENTORYSIZE; i++) {
+		c->tool[i] = false;
+		c->weapon[i] = false;
+		c->armor[i] = false;
+	}
+	c->size_tool = 0;
+	c->size_weapon = 1; //start with a weapon
+	c->size_armor = 0;
+	c->weapon[0] = true;
+	c->w_invent[0].name = "Sword";
+	c->w_invent[0].attack = (rand() % 4) + 3;
+	c->w_invent[0].durability = (rand() % 7) + 4;
+	c->w_invent[0].x = c->x;
+	c->w_invent[0].y = c->y;
+	c->w_invent[0].id = 33;
+}
+void larwen(struct mainCharacter *c) {
+	int i;
+	c->cls = "Larwen";
+	c->attack = LARWENATTACK;
+	c->health = LARWENHEALTH;
+	c->fixedHealth = LARWENHEALTH;
+	c->tile = PLAYER;
+	c->xp = 0;
+	c->level = 1;
+	c->nextLevel = LARWENFIRSTLEVEL;
+	for(i = 0; i < INVENTORYSIZE; i++) {
+		c->tool[i] = false;
+		c->weapon[i] = false;
+		c->armor[i] = false;
+	}
+	c->size_tool = 0;
+	c->size_weapon = 0;
+	c->size_armor = 1; //start with one piece of armor
+	c->armor[0] = true;
+	c->a_invent[0].name = "Chestplate";
+	c->a_invent[0].reduction = (rand() % 3) + 2;
+	c->a_invent[0].durability = (rand() % 12) + 3;
+	c->a_invent[0].id = 33;
 }
 void attackPlayer(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int y) {
 	if(c->armor[0]) {
@@ -249,27 +345,21 @@ void moveMonster(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int 
 }
 void initCharacter(struct mainCharacter *c) {
 	int i;
-	c->attack = ATTACK;
-	c->health = HEALTH;
-	c->fixedHealth = HEALTH;
-	c->tile = PLAYER;
-	c->xp = 0;
-	c->level = 1;
-	c->nextLevel = FIRSTLEVEL;
-	for(i = 0; i < INVENTORYSIZE; i++) {
-		c->tool[i] = false;
-		c->weapon[i] = false;
-		c->armor[i] = false;
+	char a = chooseClass();
+	switch(a) {
+		case '1':
+			human(c);
+			break;
+		case '2':
+			theor(c);
+			break;
+		case '3':
+			larwen(c);
+			break;
+		default:
+			human(c);
+			break;
 	}
-	c->size_tool = 1; //start with one tool
-	c->size_weapon = 0;
-	c->size_armor = 0;
-	c->tool[0] = true;
-	c->t_invent[0].name = "Stone PickAxe";
-	c->t_invent[0].durability = (rand() % 19) + 1;
-	c->t_invent[0].x = c->x;
-	c->t_invent[0].y = c->y;
-	c->t_invent[0].id = 33;
 	//xy character starting positions
 	c->x = rand() % MAP_X;
 	if(c->x <= 0) {
@@ -837,7 +927,16 @@ void createMap(struct tiles map[][MAP_X]) {
 void printGame(struct mainCharacter *character, struct tiles map[][MAP_X]) {
 	int yCord = 0, xCord = 0, constX = CONSTX, constY = CONSTY, i, j;
 	int xup = constX, xdown = constX, yup = constY, ydown = constY;
-	int printY = 1, health = HEALTH;
+	int printY = 1, health;
+	if(strncmp(character->cls, "Human", 5) == 0) {
+		health = HUMANHEALTH;
+	}
+	else if(strncmp(character->cls, "Theor", 5) == 0) {
+		health = THEORHEALTH;
+	}
+	else if(strncmp(character->cls, "Larwen", 6) == 0) {
+		health = LARWENHEALTH;
+	}
 	bool foundItem = false;
 	//used for printing out screen | gets the x and y lenghts
 	if(character->y + constY > MAP_Y - 1) {
@@ -892,10 +991,10 @@ void printGame(struct mainCharacter *character, struct tiles map[][MAP_X]) {
 	yCord = 0;
 	xCord = 0;
 	if(character->weapon[0]){
-		mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character->name, character->attack + character->w_invent[0].attack, character->health, character->fixedHealth);
+		mvprintw(constY * 2 + printY++, 0, "Name = %s Class = %s Atk = %d Hlth = %d/%d", character->name, character->cls, character->attack + character->w_invent[0].attack, character->health, character->fixedHealth);
 	}
 	else{
-		mvprintw(constY * 2 + printY++, 0, "Name = %s Atk = %d Hlth = %d/%d", character->name, character->attack, character->health, character->fixedHealth);
+		mvprintw(constY * 2 + printY++, 0, "Name = %s Class = %s Atk = %d Hlth = %d/%d", character->name, character->cls, character->attack, character->health, character->fixedHealth);
 	}
 	mvprintw(constY * 2 + printY++, 0, "Level: %d | XP = %d/%d", character->level, character->xp, character->nextLevel);
 	//print items under map
@@ -915,7 +1014,16 @@ void moveCharacter(struct mainCharacter *character, struct tiles map[][MAP_X]) {
 	int x = 0, y = 0, yCord = 0, xCord = 0, max_x = 0, max_y = 0, i, j;
 	int constX = CONSTX, constY = CONSTY;
 	int xup = constX, xdown = constX, yup = constY, ydown = constY;
-	int printY = 6, health = HEALTH;
+	int printY = 6, health;
+	if(strncmp(character->cls, "Human", 5) == 0) {
+		health = HUMANHEALTH;
+	}
+	else if(strncmp(character->cls, "Theor", 5) == 0) {
+		health = THEORHEALTH;
+	}
+	else if(strncmp(character->cls, "Larwen", 6) == 0) {
+		health = LARWENHEALTH;
+	}
 	bool foundItem = false;
 	int num = 0;
 
