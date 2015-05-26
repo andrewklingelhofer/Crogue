@@ -1,12 +1,19 @@
 #include "tools-weapons.h"
 #include "armor.h"
 
-#define INVENTORYSIZE 3
+#define INVENTORYSIZE 1
+#define HUMANHEALTH 12 //starting human health
+#define HUMANATTACK 2 //starting human attack
+#define THEORHEALTH 7 //starting theor health
+#define THEORATTACK 3 //starting theor attack
+#define LARWENHEALTH 5 //starting larwen health
+#define LARWENATTACK 5 //starting larwen attack
 
 struct mainCharacter {
 	int health;
 	int fixedHealth;
 	char *name;
+	char *cls;
 	int attack;
 	int x;
 	int y;
