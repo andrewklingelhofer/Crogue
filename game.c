@@ -7,10 +7,16 @@
 #include "characters.h"
 
 #define NAME_LENGTH 20
+
 #define MAP_X 100
 #define MAP_Y 40
+
 #define DISTANCE 6 //distance monsters can sense character
+
 #define LOOTSPAWN 15 //affects how frequent items are in structures
+#define MONSTERSPAWN 200 //affects how frequent monsters are in map
+#define STRUCTURESPAWN 200
+
 #define WALL '='
 #define PLAYER '@'
 #define GROUND '.'
@@ -21,13 +27,16 @@
 #define GOBLIN 'g'
 #define ORC 'O'
 #define DEMON 'D'
+
 #define CONSTX 16 //for printing purposes
 #define CONSTY 8 //for printing purposes
-#define HUMANFIRSTLEVEL 10 //starting human xp needed, doubles each new level
-#define THEORFIRSTLEVEL 20 //starting human xp needed, doubles each new level
-#define LARWENFIRSTLEVEL 40 //starting human xp needed, doubles each new level
+
 #define BLANK ' '
+
 #define TAB 9 //for 'tab' button
+
+#define INCREASEHEALTH 2
+#define INCREASEATTACK 1
 
 struct tiles {
 		char tile;
@@ -76,12 +85,26 @@ struct monster initMonster() {
 	return m;
 }
 int nextLevel(int next) {
-	next += next;
+	next += next / 2;
 	return next;
 }
 void lore() {
+	int y = 0;
 	clear();
-	mvprintw(0, 0, "Here is the lore. Press any key to continue.");
+	mvprintw(y++, 0, "Human: ");
+	mvprintw(y++, 8, "The last native race to inhabit the Earth.");
+	mvprintw(y++, 8, "Their exceptional stamina grants them extra health with reduced attack.");
+	mvprintw(y++, 8, "However, they gain levels more rapidly, making them a valuable character to choose.");
+	mvprintw(y++, 0, "Theor: ");
+	mvprintw(y++, 8, "The most technologically advanced civilization.");
+	mvprintw(y++, 8, "Their masterful understanding of warfare grants them balanced attack and health.");
+	mvprintw(y++, 8, "They begin with a weapon, which gives them an insurmountable advantage in combat.");
+	mvprintw(y++, 0, "Larwen: ");
+	mvprintw(y++, 8, "The most aggressive band of aliens.");
+	mvprintw(y++, 8, "Their sheer strengh grants them a powerful base attack.");
+	mvprintw(y++, 8, "Strong in nature, they lack the stamina of Humans, but what they lack, they gain in armor.");
+	y++;
+	mvprintw(y++, 0, "Press any key to continue...");
 	getch();
 }
 char chooseClass() {
@@ -214,7 +237,10 @@ void attackPlayer(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int
 	else if(map[y][x].m.health <= 0) {
 		c->xp += map[y][x].m.xp;
 		while(c->xp >= c->nextLevel) {
-			c->fixedHealth += 2;
+			if(c->nextLevel % 3 == 0) {
+				c->attack += INCREASEATTACK;
+			}
+			c->fixedHealth += INCREASEHEALTH;
 			c->nextLevel = nextLevel(c->nextLevel);
 			c->level++;
 		}
@@ -261,7 +287,8 @@ void playerAttack(struct mainCharacter *c, struct tiles map[][MAP_X], int x, int
 	else if(map[y][x].m.health <= 0) {
 		c->xp += map[y][x].m.xp;
 		while(c->xp >= c->nextLevel) {
-			c->fixedHealth += 2;
+			c->attack += INCREASEATTACK;
+			c->fixedHealth += INCREASEHEALTH;
 			c->nextLevel = nextLevel(c->nextLevel);
 			c->level++;
 		}
@@ -848,9 +875,9 @@ void createMap(struct tiles map[][MAP_X]) {
 	char id = 34; //initial tool starts at 33
 	for(i = MAP_Y - 1; i >= 0; i--) {
 		for(j = 0; j < MAP_X; j++) {
-			int m = rand() % 200; //monster frequency
+			int m = rand() % MONSTERSPAWN; //monster frequency
 			int r = rand() % 4000; //what does this do??
-			int s = rand() % 200; //structure frequency
+			int s = rand() % STRUCTURESPAWN; //structure frequency
 			int z = -1;
 			if(i == MAP_Y - 1 || j == MAP_X - 1 || i == 0 || j == 0){
 				map[i][j].tile = WALL;
