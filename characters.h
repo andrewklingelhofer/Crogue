@@ -4,10 +4,13 @@
 #define INVENTORYSIZE 1
 #define HUMANHEALTH 12 //starting human health
 #define HUMANATTACK 2 //starting human attack
-#define THEORHEALTH 7 //starting theor health
+#define THEORHEALTH 9 //starting theor health
 #define THEORATTACK 3 //starting theor attack
-#define LARWENHEALTH 5 //starting larwen health
+#define LARWENHEALTH 6 //starting larwen health
 #define LARWENATTACK 5 //starting larwen attack
+#define HUMANFIRSTLEVEL 20 //starting human xp needed, doubles each new level
+#define THEORFIRSTLEVEL 40 //starting theor xp needed, doubles each new level
+#define LARWENFIRSTLEVEL 60 //starting larwen xp needed, doubles each new level
 
 struct mainCharacter {
 	int health;
